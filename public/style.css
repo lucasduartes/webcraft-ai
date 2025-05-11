@@ -1,0 +1,127 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  body {
+    font-family: Arial, sans-serif;
+    background-color: #1e1e1e;
+    color: #f0f0f0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+  
+  .container {
+    display: flex;
+    width: 90%;
+    height: 90vh;
+    border: 1px solid #333;
+  }
+  
+  .left-panel, .right-panel {
+    padding: 20px;
+  }
+  
+  .left-panel {
+    width: 40%;
+    background-color: #252525;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  
+  .right-panel {
+    width: 60%;
+    background-color: #333;
+    overflow: auto;
+  }
+  
+  .header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  
+  .logo {
+    width: 50px;
+    margin-right: 10px;
+  }
+  
+  .app-name {
+    font-size: 24px;
+  }
+  
+  .chat-section {
+    flex-grow: 1;
+    overflow-y: auto;
+    margin-bottom: 10px;
+  }
+  
+  .input-section {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  #input-text {
+    width: 100%;
+    height: 60px;
+    margin-bottom: 10px;
+    background-color: #333;
+    color: #f0f0f0;
+    border: 1px solid #555;
+    padding: 10px;
+  }
+  
+  #send-btn {
+    padding: 10px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  #send-btn:hover {
+    background-color: #0056b3;
+  }
+  
+  #code-preview {
+    background-color: #fff;
+    color: #000;
+    height: 100%;
+    padding: 10px;
+  }
+  
+
+  .code-container {
+    position: relative;
+    background-color: transparent;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 10px;
+    margin-top: 5px;
+    overflow: auto;
+    white-space: pre-wrap; /* Permite quebras de linha para exibir o código completo */
+    max-height: 300px; /* Limite de altura para o contêiner */
+  }
+  
+  .copy-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    padding: 5px 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+  }
+  
+  .copy-btn:hover {
+    background-color: #0056b3;
+  }
+  
