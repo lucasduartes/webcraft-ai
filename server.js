@@ -8,7 +8,17 @@ const app = express();
 const port = process.env.PORT || 3001;
 
 // Middleware para JSON e CORS
-app.use(cors());
+const allowedOrigins = [
+  'https://webcraft-ai-nine.vercel.app', // seu front-end no Vercel
+  'http://localhost:3000'                // útil para testes locais
+];
+
+app.use(cors({
+  origin: allowedOrigins,
+  methods: ['POST'],
+  allowedHeaders: ['Content-Type']
+}));
+
 app.use(express.json());
 
 // Serve os arquivos estáticos da pasta "public"
