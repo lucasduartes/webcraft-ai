@@ -3,7 +3,8 @@ const sendBtn = document.getElementById('send-btn');
 const chatSection = document.getElementById('chat-section');
 const codePreview = document.getElementById('code-preview');
 
-const endpoint = "https://SEU-BACKEND.onrender.com/api/generate";
+const endpoint = "https://webcraft-ai-0wkz.onrender.com/api/generate";
+
 
 
 sendBtn.addEventListener('click', sendMessage);
