@@ -1,0 +1,5 @@
+crie uma tela de login com campos de usuario e senha, botão 'Entrar' e hyperlink com opção de 'Esqueci minha senha'
+
+crie uma tela de cadastro de usuario
+
+crie uma tela de pagamentos do 'carrinho de compras' com opções de pagamento em cartão, boleto ou pix

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,8 +13,9 @@
         <img src="logo2.png" alt="Logo" class="logo">
         <h1 class="app-name">Webcraft AI</h1>
       </div>
-      <div class="chat-section" id="chat-section">
-      </div>
+
+      <div class="chat-section" id="chat-section"></div>
+
       <div class="input-section">
         <textarea id="input-text" placeholder="Descreva a interface desejada..."></textarea>
         <button id="send-btn">Enviar</button>
@@ -23,10 +24,19 @@
     
     <div class="right-panel">
       <div id="code-preview">
+        <!-- Opcional: já deixa o preview fixo aqui; se não, o app.js cria -->
+        <div id="preview" class="preview"></div>
       </div>
     </div>
   </div>
 
+  <!-- ORDEM IMPORTA: tokens → presets → components → renderer → schema → prompt → app -->
+  <script src="theme.js"></script>
+  <script src="presets.js"></script>
+  <script src="components.js"></script>
+  <script src="renderer.js"></script>
+  <script src="schema.js"></script>
+  <script src="prompt-template.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

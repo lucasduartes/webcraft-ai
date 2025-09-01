@@ -1,208 +1,204 @@
+// app.js – versão compatível com renderer/schema/prompt (JSON-only)
+// Mantém seus elementos (chat/preview) e fala com backends antigo ou novo.
+
 const inputText = document.getElementById('input-text');
 const sendBtn = document.getElementById('send-btn');
 const chatSection = document.getElementById('chat-section');
 const codePreview = document.getElementById('code-preview');
 
+// Ajuste o endpoint conforme ambiente:
+//const endpoint = "http://localhost:3001/api/generate";
 const endpoint = "https://webcraft-ai-0wkz.onrender.com/api/generate";
 
+// Aplica o tema assim que a página carregar
+window.addEventListener('DOMContentLoaded', () => {
+  try { window.applyTheme?.(window.THEME); } catch (e) { console.warn('applyTheme falhou', e); }
 
-
-sendBtn.addEventListener('click', sendMessage);
-inputText.addEventListener('keypress', function (e) {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    sendMessage();
+  // Garante que existe um #preview (necessário pelo renderer.js)
+  let preview = document.getElementById('preview');
+  if (!preview) {
+    const el = document.createElement('div');
+    el.id = 'preview';
+    el.className = 'preview';
+    codePreview?.appendChild(el);
   }
 });
 
-function sendMessage() {
-  const userInput = inputText.value.trim();
-  if (userInput === "") return;
+// Handlers
+sendBtn?.addEventListener('click', handleGenerate);
+inputText?.addEventListener('keypress', function (e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    handleGenerate();
+  }
+});
 
-  appendMessage("User", userInput);
-
-  fetchAIResponse(userInput);
-
-  inputText.value = "";
-}
-
-function appendMessage(sender, message, isCode = false) {
+// Utilidades de chat (mantidas)
+function appendMessage(sender, message) {
+  if (!chatSection) return;
   const messageDiv = document.createElement('div');
   messageDiv.classList.add('message');
-
-  if (isCode) {
-    const codeBlocks = extractCodeBlocks(message);
-    codeBlocks.forEach(block => {
-      const codeContainer = document.createElement('div');
-      codeContainer.classList.add('code-container');
-
-      const pre = document.createElement('pre');
-      pre.style.whiteSpace = 'pre-wrap';
-      pre.style.overflow = 'auto';
-      pre.textContent = block.content;
-
-
-      const copyButton = document.createElement('button');
-      copyButton.textContent = `Copiar ${block.language}`;
-      copyButton.classList.add('copy-btn');
-      copyButton.onclick = () => copyToClipboard(block.content);
-
-      codeContainer.appendChild(copyButton);
-      codeContainer.appendChild(pre);
-      messageDiv.appendChild(codeContainer);
-    });
-  } else {
-    messageDiv.innerHTML = `<strong>${sender}:</strong> <pre>${message}</pre>`;
-  }
-
+  messageDiv.innerHTML = `<strong>${sender}:</strong> <pre style="white-space:pre-wrap">${message}</pre>`;
   chatSection.appendChild(messageDiv);
   chatSection.scrollTop = chatSection.scrollHeight;
 }
 
+// Fluxo principal
+async function handleGenerate() {
+  const userInput = (inputText?.value || '').trim();
+  if (!userInput) return;
 
-function copyToClipboard(text) {
-  navigator.clipboard.writeText(text).then(() => {
-    alert("Código copiado para a área de transferência!");
-  }).catch(err => {
-    console.error("Erro ao copiar para a área de transferência:", err);
-  });
-}
-
-async function fetchAIResponse(userInput) {
-  const requestOptions = {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({ prompt: userInput })
-};
-
+  appendMessage('User', userInput);
+  inputText.value = '';
 
   try {
-    const response = await fetch(endpoint, requestOptions);
+    // Monta prompt com trilhos (usa preset default se não houver seletor)
+    const preset = window.DEFAULT_PRESET || 'TopHeaderFixed';
+    const prompt = window.buildPrompt(userInput, preset);
 
-    if (!response.ok) {
-      throw new Error(`Erro: ${response.status} ${response.statusText}`);
-    }
+    appendMessage('AI', '⏳ Gerando tela padronizada…');
 
-    const data = await response.json();
-    const aiMessage = data.choices[0].message.content.trim();
-
-    // Exibe a mensagem da IA no chat
-    appendMessage("AI", aiMessage, true);
-
-    // Extrai os blocos de código da resposta
-    const codeBlocks = extractCodeBlocks(aiMessage);
-    const combinedCode = {
-      html: codeBlocks.find(block => block.language === 'HTML')?.content || "",
-      css: codeBlocks.find(block => block.language === 'CSS')?.content || "",
-      js: codeBlocks.find(block => block.language === 'JavaScript')?.content || ""
+    // Payload compatível (manda ambos formatos: novo e legado)
+    const payload = {
+      // Novo (Chat Completions)
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: 'Você retorna apenas JSON válido conforme o schema. Sem markdown.' },
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0.2,
+      max_tokens: 1800,
+      // Legado (caso seu backend espere isso)
+      prompt: prompt
     };
 
-    console.log("Código combinado extraído:", combinedCode);
+    // Chamada ao backend
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
 
-    // Verifica se ao menos o HTML foi retornado
-    if (!combinedCode.html.trim()) {
-      appendMessage("AI", "⚠️ Nenhum bloco de HTML foi encontrado na resposta da IA. Tente reformular seu prompt.");
+    if (!res.ok) throw new Error(`Erro da API: ${res.status} ${res.statusText}`);
+
+    // Tenta primeiro como texto puro (novo backend recomendado retorna text/plain com JSON puro)
+    let raw = await res.text();
+
+    // Se o servidor devolveu JSON (application/json), raw será uma string JSON. Tente parsear.
+    let contentText = raw;
+    try {
+      const maybeObj = JSON.parse(raw);
+
+      // Caso antigo: formato OpenAI { choices[0].message.content }
+      if (maybeObj && maybeObj.choices?.[0]?.message?.content) {
+        contentText = String(maybeObj.choices[0].message.content);
+      } else {
+        // Talvez o servidor tenha devolvido diretamente o objeto de tela
+        contentText = raw; // manter como string JSON do schema
+      }
+    } catch {
+      // raw já é texto (provável text/plain). Seguimos com contentText = raw
+    }
+
+    // Agora precisamos obter um OBJETO de tela do contentText:
+    // 1) Tenta JSON direto
+    let screenObj = null;
+    try {
+      screenObj = JSON.parse(contentText);
+    } catch {
+      // 2) Extrai primeiro bloco {...} do conteúdo (se vier com ruído)
+      const m = contentText.match(/\{[\s\S]*\}$/);
+      if (m) {
+        screenObj = JSON.parse(m[0]);
+      }
+    }
+
+    // Se ainda não temos objeto, pode ser que o backend antigo tenha devolvido blocos de código.
+    if (!screenObj) {
+      appendMessage('AI', '⚠️ A resposta não está em JSON de tela. Vou tentar renderizar como código (modo legado).');
+
+      // Modo legado (se vier HTML/CSS/JS em blocos markdown)
+      const blocks = extractCodeBlocks(contentText);
+      const combinedCode = {
+        html: blocks.find(b => b.language === 'HTML')?.content || '',
+        css: blocks.find(b => b.language === 'CSS')?.content || '',
+        js: blocks.find(b => b.language === 'JAVASCRIPT')?.content || ''
+      };
+      if (!combinedCode.html.trim()) {
+        appendMessage('AI', '⚠️ Nenhum HTML encontrado. Ajuste o backend para retornar JSON-only segundo o novo schema.');
+        return;
+      }
+      renderGeneratedCodeLegacy(combinedCode);
+      appendMessage('AI', '✅ Renderizei em modo legado (HTML/CSS/JS). Recomendo migrar o backend para JSON-only.');
       return;
     }
 
-    // Adiciona CSS fallback se estiver vazio
-    const fallbackStyle = `
-      body { font-family: sans-serif; padding: 20px; }
-      input, button { margin: 10px 0; padding: 8px; }
-    `;
-    const finalCSS = combinedCode.css.trim() ? combinedCode.css : fallbackStyle;
+    // Validação do schema + renderizador
+    const { valid, errors } = window.validateScreen?.(screenObj) || { valid: false, errors: [{ message: 'validator ausente' }] };
+    if (!valid) {
+      const msg = '❌ JSON inválido: ' + errors.map(e => e.message + (e.path?.length ? ` @${e.path.join('.')}` : '')).join('; ');
+      appendMessage('AI', msg);
+      return;
+    }
 
-    // Remove links e scripts externos do HTML
-    const cleanedHTML = combinedCode.html
-      .replace(/<link[^>]+href=["'][^"']+\.css["'][^>]*>/gi, '')
-      .replace(/<script[^>]+src=["'][^"']+\.js["'][^>]*><\/script>/gi, '');
+    // Render
+    // Garante container #preview presente (caso a página tenha sido alterada)
+    let preview = document.getElementById('preview');
+    if (!preview) {
+      const el = document.createElement('div');
+      el.id = 'preview';
+      el.className = 'preview';
+      codePreview?.appendChild(el);
+    } else {
+      preview.innerHTML = '';
+    }
 
-    // Constrói o código final para renderização
-    const completeCode = `
-      <!DOCTYPE html>
-      <html lang="pt-BR">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Preview</title>
-        <style>${finalCSS}</style>
-      </head>
-      <body>
-        ${cleanedHTML}
-        <script>${combinedCode.js}</script>
-      </body>
-      </html>
-    `;
-
-    // Renderiza no iframe
-    codePreview.innerHTML = "";
-    const iframe = document.createElement('iframe');
-    iframe.style.width = "100%";
-    iframe.style.height = "100%";
-    iframe.setAttribute("sandbox", "allow-scripts");
-    iframe.srcdoc = completeCode;
-
-    codePreview.innerHTML = "";
-    codePreview.appendChild(iframe);
-
+    window.renderScreen(screenObj);
+    appendMessage('AI', '✅ Tela padronizada gerada e renderizada.');
 
   } catch (error) {
-    appendMessage("AI", `Erro ao obter resposta da IA: ${error.message}`);
-    console.error("Erro ao buscar resposta da IA:", error);
+    console.error(error);
+    appendMessage('AI', `Erro ao gerar: ${error.message}`);
   }
 }
 
+/* =========================
+   Utilidades – modo legado
+   ========================= */
 
 function extractCodeBlocks(text) {
   const blocks = [];
-
-  // 1. Extrai blocos markdown corretamente formatados
   const markdownRegex = /```(html|css|javascript)\s*([\s\S]*?)```/gi;
-  let match;
-  while ((match = markdownRegex.exec(text)) !== null) {
-    blocks.push({
-      language: match[1].toUpperCase(),
-      content: match[2].trim()
-    });
+  let m;
+  while ((m = markdownRegex.exec(text)) !== null) {
+    blocks.push({ language: m[1].toUpperCase(), content: m[2].trim() });
   }
-
-  // 2. Fallback: tenta capturar blocos sem markdown, com rótulos tipo "CSS:"
   if (!blocks.length) {
     const fallbackRegex = /(HTML|CSS|JavaScript)\s*:\s*\n([\s\S]*?)(?=\n[A-Z]{2,10}\s*:|\n*$)/gi;
-    let fallbackMatch;
-    while ((fallbackMatch = fallbackRegex.exec(text)) !== null) {
-      blocks.push({
-        language: fallbackMatch[1].toUpperCase(),
-        content: fallbackMatch[2].trim()
-      });
+    let fm;
+    while ((fm = fallbackRegex.exec(text)) !== null) {
+      blocks.push({ language: fm[1].toUpperCase(), content: fm[2].trim() });
     }
   }
-
   return blocks;
 }
 
+function renderGeneratedCodeLegacy(code) {
+  const container = document.getElementById('preview') || codePreview;
+  if (!container) return;
 
+  container.innerHTML = "";
 
-function renderGeneratedCode(code) {
-  // Limpa o contêiner de visualização
-  codePreview.innerHTML = "";
-
-  // CSS fallback mínimo para evitar layout totalmente cru
   const fallbackStyle = `
     body { font-family: sans-serif; padding: 20px; }
     input, button { margin: 10px 0; padding: 8px; }
   `;
-
   const finalCSS = code.css && code.css.trim() ? code.css : fallbackStyle;
 
-  // Remove links e scripts externos do HTML retornado pela IA
   const cleanedHTML = (code.html || "")
     .replace(/<link[^>]+href=["'][^"']+\.css["'][^>]*>/gi, '')
     .replace(/<script[^>]+src=["'][^"']+\.js["'][^>]*><\/script>/gi, '');
 
-  // Constrói o HTML completo para o iframe
   const completeCode = `
     <!DOCTYPE html>
     <html lang="pt-BR">
@@ -214,17 +210,16 @@ function renderGeneratedCode(code) {
     </head>
     <body>
       ${cleanedHTML}
-      <script>${code.js || ""}</script>
+      <script>${code.js || ""}<\/script>
     </body>
     </html>
   `;
 
-  // Cria o iframe com srcdoc para evitar problemas de origem
   const iframe = document.createElement('iframe');
   iframe.style.width = "100%";
   iframe.style.height = "100%";
   iframe.setAttribute("sandbox", "allow-scripts");
   iframe.srcdoc = completeCode;
 
-  codePreview.appendChild(iframe);
+  container.appendChild(iframe);
 }
