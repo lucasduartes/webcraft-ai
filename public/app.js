@@ -12,8 +12,8 @@ const copyJsBtn = document.getElementById('copy-js-btn');
 const downloadAllBtn = document.getElementById('download-all-btn');
 
 // Ajuste o endpoint conforme ambiente:
-const endpoint = "http://localhost:3001/api/generate";
-// const endpoint = "https://webcraft-ai-0wkz.onrender.com/api/generate";
+//const endpoint = "http://localhost:3001/api/generate";
+const endpoint = "https://webcraft-ai-0wkz.onrender.com/api/generate";
 
 // ===== NORMALIZADOR =====
 // Agrupa "Field" soltos em um "Form" válido dentro de layout.content
