@@ -3,3 +3,9 @@ crie uma tela de login com campos de usuario e senha, botão 'Entrar' e hyperlin
 crie uma tela de cadastro de usuario
 
 crie uma tela de pagamentos do 'carrinho de compras' com opções de pagamento em cartão, boleto ou pix
+
+Crie uma tela de cadastro de cliente com nome, email e telefone, e abaixo uma tabela de clientes recentes com paginação.
+
+Crie uma tela de relatórios financeiros com filtros de período (data inicial e final), botão 'Gerar relatório' e uma tabela de transações
+
+Crie uma tela de detalhes de produto com imagem grande, descrição, preço, campo de quantidade e botão 'Comprar agora'

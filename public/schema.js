@@ -2,7 +2,7 @@
 
 (function(){
   const PRESET_KEYS = Object.keys(window.PRESETS);
-  const ALLOWED_COMPONENTS = new Set(["PageHeader","FilterBar","Form","DataTable","EmptyState","Button"]);
+  const ALLOWED_COMPONENTS = new Set(["PageHeader","FilterBar","Form","DataTable","EmptyState","Button", "Image"]);
 
   function err(msg, path){ return { message: msg, path: path || [] }; }
 

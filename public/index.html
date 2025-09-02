@@ -10,7 +10,7 @@
   <div class="container">
     <div class="left-panel">
       <div class="header">
-        <img src="logo2.png" alt="Logo" class="logo">
+        <img src="/assets/logo2.png" alt="Logo" class="logo">
         <h1 class="app-name">Webcraft AI</h1>
       </div>
 
@@ -19,8 +19,29 @@
       <div class="input-section">
         <textarea id="input-text" placeholder="Descreva a interface desejada..."></textarea>
         <button id="send-btn">Enviar</button>
+
+        <div style="display:flex; gap:8px; margin-top:8px;">
+          <button id="copy-html-btn"
+              style="padding:10px 12px; border-radius:8px; border:1px solid #555; background:#444; color:#fff; cursor:pointer;">
+              Copiar HTML
+          </button>
+          <button id="copy-css-btn"
+            style="padding:10px 12px; border-radius:8px; border:1px solid #555; background:#444; color:#fff; cursor:pointer;">
+            Copiar CSS
+          </button>
+          <button id="copy-js-btn"
+            style="padding:10px 12px; border-radius:8px; border:1px solid #555; background:#444; color:#fff; cursor:pointer;">
+            Copiar JS
+          </button>
+
+          <button id="download-all-btn"
+            style="padding:10px 12px; border-radius:8px; border:1px solid #007bff; background:#007bff; color:#fff; cursor:pointer; margin-left:auto;">
+            Baixar tudo
+          </button>  
+        </div>
       </div>
     </div>
+      
     
     <div class="right-panel">
       <div id="code-preview">
@@ -37,6 +58,7 @@
   <script src="renderer.js"></script>
   <script src="schema.js"></script>
   <script src="prompt-template.js"></script>
+  <script src="exporter.js"></script> 
   <script src="app.js"></script>
 </body>
 </html>

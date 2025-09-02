@@ -1,20 +1,120 @@
 // app.js – versão compatível com renderer/schema/prompt (JSON-only)
 // Mantém seus elementos (chat/preview) e fala com backends antigo ou novo.
+// Inclui NORMALIZADOR: agrupa Fields soltos em um Form antes da validação.
 
 const inputText = document.getElementById('input-text');
 const sendBtn = document.getElementById('send-btn');
 const chatSection = document.getElementById('chat-section');
 const codePreview = document.getElementById('code-preview');
+const copyHtmlBtn = document.getElementById('copy-html-btn');
+const copyCssBtn = document.getElementById('copy-css-btn');
+const copyJsBtn = document.getElementById('copy-js-btn');
+const downloadAllBtn = document.getElementById('download-all-btn');
 
 // Ajuste o endpoint conforme ambiente:
-//const endpoint = "http://localhost:3001/api/generate";
-const endpoint = "https://webcraft-ai-0wkz.onrender.com/api/generate";
+const endpoint = "http://localhost:3001/api/generate";
+// const endpoint = "https://webcraft-ai-0wkz.onrender.com/api/generate";
 
-// Aplica o tema assim que a página carregar
+// ===== NORMALIZADOR =====
+// Agrupa "Field" soltos em um "Form" válido dentro de layout.content
+function normalizeScreen(screen) {
+  if (!screen || typeof screen !== 'object') return screen;
+
+  // Clone raso para não mutar a referência original
+  const s = JSON.parse(JSON.stringify(screen));
+  const layout = s.layout || {};
+  const content = Array.isArray(layout.content) ? layout.content : [];
+
+  const out = [];
+  let fieldBuffer = [];
+
+  const coerceToFieldNode = (node) => {
+    // Se vier como {component:"Field", props:{...}} mantemos
+    if (node && node.component === "Field") return node;
+    // Se vier só com props (ex.: { name, label, ... })
+    return { component: "Field", props: node?.props || node || {} };
+  };
+
+  const flushFields = () => {
+    if (!fieldBuffer.length) return;
+    out.push({
+      component: "Form",
+      props: {
+        id: "autoForm",
+        fields: fieldBuffer.map(coerceToFieldNode),
+        submit: { id: "submit", label: "Enviar", kind: "primary" }
+      }
+    });
+    fieldBuffer = [];
+  };
+
+  for (const node of content) {
+    if (!node) continue;
+    if (node.component === "Field") {
+      fieldBuffer.push(node);
+    } else {
+      flushFields();
+      out.push(node);
+    }
+  }
+  flushFields();
+
+  s.layout = { ...layout, content: out };
+  return s;
+}
+
+// ===== Força todas as imagens a usar asset local =====
+function enforceLocalImages(screen, localSrc = 'assets/imagem-exemplo.png') {
+  if (!screen || typeof screen !== 'object') return screen;
+  const s = JSON.parse(JSON.stringify(screen)); // clone
+
+  const fixNode = (node) => {
+    if (!node || typeof node !== 'object') return;
+    // Se for componente Image, sobrescreve o src
+    if (node.component === 'Image') {
+      node.props = node.props || {};
+      node.props.src = localSrc;
+    }
+    // Se for DataTable com coluna do tipo image, substitui valores das linhas
+    if (node.component === 'DataTable' && Array.isArray(node.props?.columns) && Array.isArray(node.props?.rows)) {
+      const imageCols = node.props.columns.filter(c => (c.type || '').toLowerCase() === 'image');
+      if (imageCols.length) {
+        const ids = imageCols.map(c => c.id);
+        node.props.rows = node.props.rows.map(r => {
+          const nr = { ...r };
+          ids.forEach(id => { nr[id] = localSrc; });
+          return nr;
+        });
+      }
+    }
+  };
+
+  // Header (caso, no futuro, tenhamos Image nele)
+  if (s.layout?.header) fixNode(s.layout.header);
+
+  // Arrays padrão
+  ['toolbar', 'content', 'footer'].forEach(region => {
+    const arr = s.layout?.[region];
+    if (Array.isArray(arr)) {
+      arr.forEach(n => {
+        // aplica no nível atual
+        fixNode(n);
+        // aplica dentro de Form.fields se existir algo relacionado
+        if (n.component === 'Form' && Array.isArray(n.props?.fields)) {
+          n.props.fields.forEach(f => fixNode(f));
+        }
+      });
+    }
+  });
+
+  return s;
+}
+
+
+// Aplica o tema assim que a página carregar e garante #preview
 window.addEventListener('DOMContentLoaded', () => {
   try { window.applyTheme?.(window.THEME); } catch (e) { console.warn('applyTheme falhou', e); }
 
-  // Garante que existe um #preview (necessário pelo renderer.js)
   let preview = document.getElementById('preview');
   if (!preview) {
     const el = document.createElement('div');
@@ -33,7 +133,7 @@ inputText?.addEventListener('keypress', function (e) {
   }
 });
 
-// Utilidades de chat (mantidas)
+// Utilidades de chat
 function appendMessage(sender, message) {
   if (!chatSection) return;
   const messageDiv = document.createElement('div');
@@ -133,6 +233,10 @@ async function handleGenerate() {
       return;
     }
 
+    // ✅ NORMALIZA ANTES DE VALIDAR (agrupa Fields soltos em Form)
+    screenObj = normalizeScreen(screenObj);
+    screenObj = enforceLocalImages(screenObj);
+
     // Validação do schema + renderizador
     const { valid, errors } = window.validateScreen?.(screenObj) || { valid: false, errors: [{ message: 'validator ausente' }] };
     if (!valid) {
@@ -142,7 +246,6 @@ async function handleGenerate() {
     }
 
     // Render
-    // Garante container #preview presente (caso a página tenha sido alterada)
     let preview = document.getElementById('preview');
     if (!preview) {
       const el = document.createElement('div');
@@ -154,6 +257,7 @@ async function handleGenerate() {
     }
 
     window.renderScreen(screenObj);
+    window.__lastScreen__ = screenObj;
     appendMessage('AI', '✅ Tela padronizada gerada e renderizada.');
 
   } catch (error) {
@@ -223,3 +327,40 @@ function renderGeneratedCodeLegacy(code) {
 
   container.appendChild(iframe);
 }
+
+// ===== Export (HTML/CSS/JS) – integra com exporter.js =====
+copyHtmlBtn?.addEventListener('click', async () => {
+  try {
+    await window.Exporter.copyHTML(window.__lastScreen__);
+    appendMessage('AI', '📋 HTML (externo) copiado.');
+  } catch (e) {
+    appendMessage('AI', 'Erro ao copiar HTML: ' + e.message);
+  }
+});
+
+copyCssBtn?.addEventListener('click', async () => {
+  try {
+    await window.Exporter.copyCSS();
+    appendMessage('AI', '📋 CSS copiado.');
+  } catch (e) {
+    appendMessage('AI', 'Erro ao copiar CSS: ' + e.message);
+  }
+});
+
+copyJsBtn?.addEventListener('click', async () => {
+  try {
+    await window.Exporter.copyJS();
+    appendMessage('AI', '📋 JS copiado.');
+  } catch (e) {
+    appendMessage('AI', 'Erro ao copiar JS: ' + e.message);
+  }
+});
+
+downloadAllBtn?.addEventListener('click', () => {
+  try {
+    window.Exporter.downloadAll(window.__lastScreen__);
+    appendMessage('AI', '⬇️ index.html, style.css e app.js baixados.');
+  } catch (e) {
+    appendMessage('AI', 'Erro ao baixar: ' + e.message);
+  }
+});

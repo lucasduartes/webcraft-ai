@@ -89,7 +89,7 @@
     ]);
   }
 
-  function DataTable(props={}){
+   function DataTable(props = {}) {
     const { columns = [], rows = [], pagination, actions = [], rowSelection } = props;
     const wrap = h("div", { class: "card table-wrap" });
 
@@ -104,40 +104,93 @@
     thead.appendChild(trh);
 
     const tbody = h("tbody");
+
+    // helper para célula
+    const renderCell = (col, value) => {
+        const type = (col.type || "text").toLowerCase();
+        if (value == null) value = "";
+
+        if (type === "image") {
+        const img = document.createElement("img");
+        img.src = String(value);
+        img.alt = col.label || col.id || "imagem";
+        img.style.maxWidth = (col.maxWidth || 64) + "px";
+        img.style.maxHeight = (col.maxHeight || 64) + "px";
+        img.style.borderRadius = "8px";
+        const box = h("div", { style: { display: "flex", alignItems: "center", gap: "8px" } }, img);
+        return box;
+        }
+
+        if (type === "currency") {
+        const n = Number(value) || 0;
+        const formatted = n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+        return document.createTextNode(formatted);
+        }
+
+        return document.createTextNode(String(value));
+    };
+
     if (!rows.length) {
-      const tr = h("tr");
-      const td = h("td", { attrs: { colspan: String(columns.length + (rowSelection?1:0) + (actions?.length?1:0)) } });
-      td.appendChild(EmptyState({ description: "" }));
-      tr.appendChild(td);
-      tbody.appendChild(tr);
+        const tr = h("tr");
+        const td = h("td", {
+        attrs: { colspan: String(columns.length + (rowSelection ? 1 : 0) + (actions?.length ? 1 : 0)) }
+        });
+        td.appendChild(EmptyState({ title: "Sem dados", description: "Tente ajustar o filtro ou gerar dados de exemplo." }));
+        tr.appendChild(td);
+        tbody.appendChild(tr);
     } else {
-      rows.forEach(r => {
+        rows.forEach(r => {
         const tr = h("tr");
         if (rowSelection) {
-          const sel = h("input", { attrs: { type: rowSelection === "multiple" ? "checkbox" : "radio", name: "rowSel" } });
-          tr.appendChild(h("td", {}, sel));
+            const sel = h("input", {
+            attrs: { type: rowSelection === "multiple" ? "checkbox" : "radio", name: "rowSel" }
+            });
+            tr.appendChild(h("td", {}, sel));
         }
-        columns.forEach(c => tr.appendChild(h("td", { text: r[c.id] != null ? String(r[c.id]) : "" })));
+        columns.forEach(c => {
+            const v = r[c.id];
+            const td = h("td");
+            td.appendChild(renderCell(c, v));
+            tr.appendChild(td);
+        });
         if (actions?.length) {
-          const td = h("td");
-          actions.forEach(a => td.appendChild(Button(a)));
-          tr.appendChild(td);
+            const td = h("td");
+            actions.forEach(a => td.appendChild(Button(a)));
+            tr.appendChild(td);
         }
         tbody.appendChild(tr);
-      });
+        });
     }
 
     table.appendChild(thead);
     table.appendChild(tbody);
 
     const footer = h("div", { class: "table-footer" }, [
-      pagination ? h("span", { text: `Página ${pagination.page} • ${pagination.pageSize}/p • Total ${pagination.total}` }) : null
+        pagination ? h("span", { text: `Página ${pagination.page} • ${pagination.pageSize}/p • Total ${pagination.total}` }) : null
     ]);
 
     wrap.appendChild(table);
     wrap.appendChild(footer);
     return wrap;
-  }
+   }
+
+   function Image(props = {}) {
+    const { src, alt = "", width, height, radius = 12, fit = "cover" } = props;
+    const wrap = h("div", { class: "card" });
+    const img = document.createElement("img");
+    img.src = String(src || "");
+    img.alt = alt;
+    img.style.display = "block";
+    if (width)  img.style.maxWidth  = Number(width)  + "px";
+    if (height) img.style.maxHeight = Number(height) + "px";
+    img.style.width = width ? "100%" : "auto";
+    img.style.height = "auto";
+    img.style.borderRadius = radius + "px";
+    img.style.objectFit = fit;
+    wrap.appendChild(img);
+    return wrap;
+   }
+
 
   window.Components = {
     PageHeader,
@@ -145,7 +198,8 @@
     Form,
     DataTable,
     EmptyState,
-    Button
+    Button,
+    Image
   };
 })();
 
