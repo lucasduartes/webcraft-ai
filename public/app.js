@@ -8,6 +8,8 @@ const copyHtmlBtn = document.getElementById('copy-html-btn');
 const copyCssBtn = document.getElementById('copy-css-btn');
 const copyJsBtn = document.getElementById('copy-js-btn');
 const downloadAllBtn = document.getElementById('download-all-btn');
+const clearPreviewBtn = document.getElementById('clear-preview-btn');
+
 
 
 //const endpoint = "http://localhost:3001/api/generate";
@@ -392,3 +394,14 @@ downloadAllBtn?.addEventListener('click', () => {
   }
 });
 
+clearPreviewBtn?.addEventListener('click', () => {
+  try {
+    const preview = document.getElementById('preview') || codePreview;
+    if (!preview) throw new Error('Preview não encontrado.');
+    preview.innerHTML = '';
+    window.__lastScreen__ = null; // zera a última tela exportável
+    appendMessage('AI', '🧼 Preview limpo.');
+  } catch (e) {
+    appendMessage('AI', 'Erro ao limpar preview: ' + e.message);
+  }
+});
