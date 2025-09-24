@@ -9,3 +9,4 @@ Crie uma tela de cadastro de cliente com nome, email e telefone, e abaixo uma ta
 Crie uma tela de relatórios financeiros com filtros de período (data inicial e final), botão 'Gerar relatório' e uma tabela de transações
 
 Crie uma tela de detalhes de produto com imagem grande, descrição, preço, campo de quantidade e botão 'Comprar agora'
+

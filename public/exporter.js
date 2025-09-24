@@ -1,7 +1,7 @@
 // exporter.js
 // Exporta o preview para HTML/CSS/JS (cópia e download).
 (function () {
-  // ===== CSS base (igual ao usado no preview) =====
+  
   const CSS_TEMPLATE = `
 :root{
   --color-brand-primary:#1E3A8A; --color-brand-secondary:#22C55E;
@@ -41,7 +41,7 @@ body{margin:0;font-family:var(--font);color:#0e1013;background:#fff}
 img{display:block}
 `;
 
-  // ===== JS base (opcional). Hoje é mínimo; coloque aqui futuros handlers. =====
+  
   const JS_TEMPLATE = `
 // app.js (exportado)
 // Espaço para interações específicas caso você adicione hooks nos componentes.
@@ -64,7 +64,7 @@ console.log('App inline carregado.');
       .replace(/'/g, '&#39;');
   }
 
-  // HTML inline (usa CSS embutido) — útil para abrir rápido
+ 
   function buildInlineHTML(inner, title = 'Preview') {
     return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -83,7 +83,7 @@ console.log('App inline carregado.');
 </html>`;
   }
 
-  // HTML esqueleto externo (referencia style.css e app.js) — para “pacote separado”
+
   function buildExternalHTML(title = 'Preview') {
     return `<!DOCTYPE html>
 <html lang="pt-BR">

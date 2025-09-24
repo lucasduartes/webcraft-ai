@@ -16,7 +16,7 @@ window.buildPrompt = function buildPrompt(userInstruction, presetName){
     { name: "Image", props: ["src","alt","width","height","radius","fit"] }
   ];
 
-  // Dica de schema para orientar o modelo (não é o validador real)
+
   const schemaHint = {
     meta: { preset: preset.id, title: "string" },
     layout: {
@@ -45,6 +45,8 @@ REGRAS:
 - Para preços, use número (ex.: 149.9) para permitir formatação local.
 - PARA IMAGENS DE EXEMPLO: use SEMPRE caminhos locais do projeto, NUNCA links externos.
   • Ex.: "assets/imagem-exemplo.png" (não usar https://picsum.photos).
+- Nunca adicione ações ou botões no PageHeader (props.actions deve ser vazio).
+
 
 TEMA ATIVO: ${theme.name}. Tokens básicos: cores(brandPrimary=${theme.colors.brandPrimary}, bg=${theme.colors.bgPage}), tipografia base ${theme.typography.fontFamily}.
 PRESET OBRIGATÓRIO: ${preset.id} com regiões ${preset.regions.join(', ')}.

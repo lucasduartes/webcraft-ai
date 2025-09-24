@@ -12,7 +12,6 @@
     if (!node.component || !ALLOWED_COMPONENTS.has(node.component)) {
       errors.push(err(`Componente não permitido: ${node.component}`, path.concat(["component"])));
     }
-    // props é livre por enquanto (validações específicas podem ser adicionadas aqui)
     return errors;
   }
 
@@ -27,7 +26,7 @@
       if (screen.meta.title && typeof screen.meta.title !== "string") errors.push(err("meta.title deve ser string",["meta","title"]));
     }
 
-    // layout
+
     const layout = screen.layout || {};
     const regions = window.PRESETS[screen.meta?.preset || window.DEFAULT_PRESET].regions;
     regions.forEach(r => {
@@ -38,7 +37,7 @@
         if (arr && !Array.isArray(arr)) errors.push(err(`${r} deve ser array`,["layout",r]));
         if (Array.isArray(arr)) arr.forEach((n,i)=> errors.push(...validateNode(n,["layout",r,i])));
       } else if (r === "leftnav") {
-        // opcional, mas se existir futuramente pode validar aqui
+
       }
     });
 

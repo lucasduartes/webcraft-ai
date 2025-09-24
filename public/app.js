@@ -1,6 +1,4 @@
-// app.js – versão compatível com renderer/schema/prompt (JSON-only)
 // Mantém seus elementos (chat/preview) e fala com backends antigo ou novo.
-// Inclui NORMALIZADOR: agrupa Fields soltos em um Form antes da validação.
 
 const inputText = document.getElementById('input-text');
 const sendBtn = document.getElementById('send-btn');
@@ -11,16 +9,15 @@ const copyCssBtn = document.getElementById('copy-css-btn');
 const copyJsBtn = document.getElementById('copy-js-btn');
 const downloadAllBtn = document.getElementById('download-all-btn');
 
-// Ajuste o endpoint conforme ambiente:
+
 //const endpoint = "http://localhost:3001/api/generate";
 const endpoint = "https://webcraft-ai-0wkz.onrender.com/api/generate";
 
-// ===== NORMALIZADOR =====
-// Agrupa "Field" soltos em um "Form" válido dentro de layout.content
+
 function normalizeScreen(screen) {
   if (!screen || typeof screen !== 'object') return screen;
 
-  // Clone raso para não mutar a referência original
+ 
   const s = JSON.parse(JSON.stringify(screen));
   const layout = s.layout || {};
   const content = Array.isArray(layout.content) ? layout.content : [];
@@ -28,10 +25,12 @@ function normalizeScreen(screen) {
   const out = [];
   let fieldBuffer = [];
 
+
+
   const coerceToFieldNode = (node) => {
-    // Se vier como {component:"Field", props:{...}} mantemos
+    
     if (node && node.component === "Field") return node;
-    // Se vier só com props (ex.: { name, label, ... })
+    
     return { component: "Field", props: node?.props || node || {} };
   };
 
@@ -63,19 +62,19 @@ function normalizeScreen(screen) {
   return s;
 }
 
-// ===== Força todas as imagens a usar asset local =====
+
 function enforceLocalImages(screen, localSrc = 'assets/imagem-exemplo.png') {
   if (!screen || typeof screen !== 'object') return screen;
   const s = JSON.parse(JSON.stringify(screen)); // clone
 
   const fixNode = (node) => {
     if (!node || typeof node !== 'object') return;
-    // Se for componente Image, sobrescreve o src
+  
     if (node.component === 'Image') {
       node.props = node.props || {};
       node.props.src = localSrc;
     }
-    // Se for DataTable com coluna do tipo image, substitui valores das linhas
+    
     if (node.component === 'DataTable' && Array.isArray(node.props?.columns) && Array.isArray(node.props?.rows)) {
       const imageCols = node.props.columns.filter(c => (c.type || '').toLowerCase() === 'image');
       if (imageCols.length) {
@@ -89,17 +88,16 @@ function enforceLocalImages(screen, localSrc = 'assets/imagem-exemplo.png') {
     }
   };
 
-  // Header (caso, no futuro, tenhamos Image nele)
   if (s.layout?.header) fixNode(s.layout.header);
 
-  // Arrays padrão
+  
   ['toolbar', 'content', 'footer'].forEach(region => {
     const arr = s.layout?.[region];
     if (Array.isArray(arr)) {
       arr.forEach(n => {
-        // aplica no nível atual
+        
         fixNode(n);
-        // aplica dentro de Form.fields se existir algo relacionado
+       
         if (n.component === 'Form' && Array.isArray(n.props?.fields)) {
           n.props.fields.forEach(f => fixNode(f));
         }
@@ -110,8 +108,36 @@ function enforceLocalImages(screen, localSrc = 'assets/imagem-exemplo.png') {
   return s;
 }
 
+// ===== Remove botões do cabeçalho (HEADER e PageHeader em qualquer região) =====
+function enforceHeaderRules(screen) {
+  if (!screen || typeof screen !== 'object') return screen;
+  const s = JSON.parse(JSON.stringify(screen));
 
-// Aplica o tema assim que a página carregar e garante #preview
+  // Zera ações no layout.header (topo fixo)
+  if (s.layout && s.layout.header) {
+    s.layout.header.props = s.layout.header.props || {};
+    s.layout.header.props.actions = [];
+  }
+
+  // Zera ações em qualquer PageHeader que apareça nas regiões
+  ['toolbar', 'content', 'footer'].forEach(region => {
+    const arr = s.layout?.[region];
+    if (Array.isArray(arr)) {
+      s.layout[region] = arr.map(node => {
+        if (node && node.component === 'PageHeader') {
+          const nn = { ...node, props: { ...(node.props || {}) } };
+          nn.props.actions = [];
+          return nn;
+        }
+        return node;
+      });
+    }
+  });
+
+  return s;
+}
+
+
 window.addEventListener('DOMContentLoaded', () => {
   try { window.applyTheme?.(window.THEME); } catch (e) { console.warn('applyTheme falhou', e); }
 
@@ -124,7 +150,7 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// Handlers
+
 sendBtn?.addEventListener('click', handleGenerate);
 inputText?.addEventListener('keypress', function (e) {
   if (e.key === 'Enter') {
@@ -133,7 +159,7 @@ inputText?.addEventListener('keypress', function (e) {
   }
 });
 
-// Utilidades de chat
+
 function appendMessage(sender, message) {
   if (!chatSection) return;
   const messageDiv = document.createElement('div');
@@ -143,7 +169,7 @@ function appendMessage(sender, message) {
   chatSection.scrollTop = chatSection.scrollHeight;
 }
 
-// Fluxo principal
+
 async function handleGenerate() {
   const userInput = (inputText?.value || '').trim();
   if (!userInput) return;
@@ -152,15 +178,15 @@ async function handleGenerate() {
   inputText.value = '';
 
   try {
-    // Monta prompt com trilhos (usa preset default se não houver seletor)
+    
     const preset = window.DEFAULT_PRESET || 'TopHeaderFixed';
     const prompt = window.buildPrompt(userInput, preset);
 
     appendMessage('AI', '⏳ Gerando tela padronizada…');
 
-    // Payload compatível (manda ambos formatos: novo e legado)
+    
     const payload = {
-      // Novo (Chat Completions)
+      
       model: 'gpt-4o-mini',
       messages: [
         { role: 'system', content: 'Você retorna apenas JSON válido conforme o schema. Sem markdown.' },
@@ -168,11 +194,11 @@ async function handleGenerate() {
       ],
       temperature: 0.2,
       max_tokens: 1800,
-      // Legado (caso seu backend espere isso)
+     
       prompt: prompt
     };
 
-    // Chamada ao backend
+   
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -236,6 +262,7 @@ async function handleGenerate() {
     // ✅ NORMALIZA ANTES DE VALIDAR (agrupa Fields soltos em Form)
     screenObj = normalizeScreen(screenObj);
     screenObj = enforceLocalImages(screenObj);
+    screenObj = enforceHeaderRules(screenObj); 
 
     // Validação do schema + renderizador
     const { valid, errors } = window.validateScreen?.(screenObj) || { valid: false, errors: [{ message: 'validator ausente' }] };
@@ -364,3 +391,4 @@ downloadAllBtn?.addEventListener('click', () => {
     appendMessage('AI', 'Erro ao baixar: ' + e.message);
   }
 });
+
