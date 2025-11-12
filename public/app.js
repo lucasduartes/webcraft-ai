@@ -211,6 +211,12 @@ async function handleGenerate() {
 
     // Tenta primeiro como texto puro (novo backend recomendado retorna text/plain com JSON puro)
     let raw = await res.text();
+        // LOG de diagnóstico (1x)
+    if (!window.__loggedRawOnce) {
+      console.debug('[IA RAW ≤1000 chars]', raw.slice(0, 1000));
+      window.__loggedRawOnce = true;
+    }
+
 
     // Se o servidor devolveu JSON (application/json), raw será uma string JSON. Tente parsear.
     let contentText = raw;
@@ -284,6 +290,27 @@ async function handleGenerate() {
     } else {
       preview.innerHTML = '';
     }
+
+    console.debug('check:', {
+      arity: window.renderScreen?.length,
+      meta: screenObj?.meta,
+      hasLayout: !!screenObj?.layout,
+      sizes: {
+        header: screenObj?.layout?.header ? 1 : 0,
+        toolbar: Array.isArray(screenObj?.layout?.toolbar) ? screenObj.layout.toolbar.length : 0,
+        content: Array.isArray(screenObj?.layout?.content) ? screenObj.layout.content.length : 0,
+        footer: Array.isArray(screenObj?.layout?.footer) ? screenObj.layout.footer.length : 0,
+      }
+    });
+
+    console.debug('[IA OBJ sizes]', {
+      header: screenObj?.layout?.header ? 1 : 0,
+      toolbar: Array.isArray(screenObj?.layout?.toolbar) ? screenObj.layout.toolbar.length : 0,
+      content: Array.isArray(screenObj?.layout?.content) ? screenObj.layout.content.length : 0,
+      footer: Array.isArray(screenObj?.layout?.footer) ? screenObj.layout.footer.length : 0,
+    });
+
+
 
     window.renderScreen(screenObj);
     window.__lastScreen__ = screenObj;
