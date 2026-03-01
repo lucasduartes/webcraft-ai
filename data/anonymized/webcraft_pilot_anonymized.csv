@@ -1,0 +1,6 @@
+participant_id,age_range,role_group,experience_range,task1_satisfaction_1to5,task2_satisfaction_1to5,task3_satisfaction_1to5,tam_pu1,tam_pu2,tam_pu3,tam_pu4,tam_pu5,tam_peou1,tam_peou2,tam_peou3,tam_peou4,tam_bi1,tam_bi2,tam_bi3,experience_building_screens_1to5,frontend_experience_range
+P05,26-35,Data,0-2 anos,5,5,3,3,3,3,4,3,4,4,3,4,3,4,3,1,Até 5 ano
+P04,26-35,Dev,6-10 anos,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,Até 5 ano
+P02,26-35,Data,0-2 anos,5,4,5,5,2,4,5,4,5,5,5,5,3,4,3,4,Até 5 ano
+P03,26-35,Dev,3-5 anos,4,4,4,4,4,3,4,4,5,5,4,5,2,3,4,5,Até 5 ano
+P01,26-35,Designer,3-5 anos,4,4,3,4,3,4,5,3,5,5,4,2,2,3,4,4,Até 5 ano
