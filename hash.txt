@@ -1,0 +1,2 @@
+SHA512 hash de webcraft-ai.zip:
+f1898ead9fbb4e3002d9166a00fa5ad32de3af48a0c16f074548adbb7022e42630bda950545ec65b1dba92b10a25f454a5ae0bb76852aa2f8dccc311b84bd95e

@@ -12,8 +12,8 @@ const clearPreviewBtn = document.getElementById('clear-preview-btn');
 
 
 
-//const endpoint = "http://localhost:3001/api/generate";
-const endpoint = "https://webcraft-ai-0wkz.onrender.com/api/generate";
+const endpoint = "http://localhost:3001/api/generate";
+//const endpoint = "https://webcraft-ai-0wkz.onrender.com/api/generate";
 
 
 function normalizeScreen(screen) {
